@@ -36,7 +36,7 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 space-y-4">
+    <form onSubmit={handleSubmit} method="post" className="rounded-xl border border-border bg-card p-6 space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1.5">Email</label>
         <input

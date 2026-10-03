@@ -49,8 +49,12 @@ export default function EditTransactionModal({
   const selectedCat = categories.find((c) => c.id === categoryId);
   const subOptions = selectedCat ? selectedCat.subcategories : [];
 
+  const typeKey = isTransfer ? "transfer" : type === "Income" ? "income" : "expense";
+  const filteredCategories = categories.filter((c) => c.type === typeKey);
+
   const onTypeChange = (next: string) => {
     setType(next);
+    const nextKey = next === "Transfer-Out" ? "transfer" : next === "Income" ? "income" : "expense";
     if (next === "Transfer-Out") {
       const transferCat = categories.find((c) => c.name === "Transfer" || c.type === "transfer");
       if (transferCat) {
@@ -58,8 +62,14 @@ export default function EditTransactionModal({
         setSubcategoryId("");
       }
     } else {
-      setCategoryId(tx.categoryId ?? "");
-      setSubcategoryId(tx.subcategoryId ?? "");
+      const originalCat = categories.find((c) => c.id === tx.categoryId);
+      if (originalCat && originalCat.type === nextKey) {
+        setCategoryId(tx.categoryId ?? "");
+        setSubcategoryId(tx.subcategoryId ?? "");
+      } else {
+        setCategoryId("");
+        setSubcategoryId("");
+      }
     }
   };
 
@@ -155,7 +165,7 @@ export default function EditTransactionModal({
                   onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId(""); }}
                 >
                   <option value="">-- Pilih Kategori --</option>
-                  {categories.map((c) => (
+                  {filteredCategories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                   ))}
                 </select>

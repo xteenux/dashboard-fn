@@ -38,18 +38,23 @@ export default function TransactionModal({
   const selectedCat = categories.find((c) => c.id === categoryId);
   const subOptions = selectedCat ? selectedCat.subcategories : [];
 
-  // When switching to transfer, auto-select the "Transfer" category if present
+  // Kategori difilter sesuai tipe transaksi: Income->income, Expense->expense, Transfer->transfer
+  const typeKey = isTransfer ? "transfer" : type === "Income" ? "income" : "expense";
+  const filteredCategories = categories.filter((c) => c.type === typeKey);
+
+  // Saat ganti tipe, reset kategori jika tidak cocok
   const onTypeChange = (next: string) => {
     setType(next);
     setDestAccountId("");
+    setSubcategoryId("");
+    const nextKey = next === "Transfer-Out" ? "transfer" : next === "Income" ? "income" : "expense";
+    const currentCat = categories.find((c) => c.id === categoryId);
+    if (currentCat && currentCat.type !== nextKey) setCategoryId("");
     if (next === "Transfer-Out") {
       const transferCat = categories.find(
         (c) => c.name.toLowerCase() === "transfer" || c.type.toLowerCase() === "transfer",
       );
-      if (transferCat) {
-        setCategoryId(transferCat.id);
-        setSubcategoryId("");
-      }
+      if (transferCat) setCategoryId(transferCat.id);
     }
   };
 
@@ -177,7 +182,7 @@ export default function TransactionModal({
                     <select className={`${fieldCls} col-span-2`} value={categoryId}
                       onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId(""); }}>
                       <option value="">-- Pilih Kategori --</option>
-                      {categories.map((c) => (
+                      {filteredCategories.map((c) => (
                         <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                       ))}
                     </select>

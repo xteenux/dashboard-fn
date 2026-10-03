@@ -63,6 +63,14 @@ export async function POST(req: NextRequest) {
   let subcategoryName: string | null = null;
   if (categoryId) {
     const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+    // Validasi: tipe kategori harus cocok dengan tipe transaksi
+    const expected = type === "Transfer-Out" ? "transfer" : type === "Income" ? "income" : "expense";
+    if (cat && cat.type !== expected) {
+      return NextResponse.json(
+        { error: `Kategori "${cat.name}" bertipe ${cat.type}, tidak cocok untuk transaksi ${type}` },
+        { status: 400 },
+      );
+    }
     categoryName = cat?.name ?? null;
   } else if (type === "Transfer-Out") {
     // Auto-resolve the "Transfer" category if caller omitted categoryId

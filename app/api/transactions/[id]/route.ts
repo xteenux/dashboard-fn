@@ -55,9 +55,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   let catIdOut: string | null | undefined;
   if (categoryId !== undefined) {
     catIdOut = categoryId || null;
-    categoryName = categoryId
-      ? (await prisma.category.findUnique({ where: { id: categoryId } }))?.name ?? null
-      : null;
+    if (categoryId) {
+      const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+      // Validasi: tipe kategori harus cocok dengan tipe transaksi efektif
+      const expected = effectiveType === "Transfer-Out" ? "transfer" : effectiveType === "Income" ? "income" : "expense";
+      if (cat && cat.type !== expected) {
+        return NextResponse.json(
+          { error: `Kategori "${cat.name}" bertipe ${cat.type}, tidak cocok untuk transaksi ${effectiveType}` },
+          { status: 400 },
+        );
+      }
+      categoryName = cat?.name ?? null;
+    } else {
+      categoryName = null;
+    }
   }
 
   let subcategoryName: string | null | undefined;
