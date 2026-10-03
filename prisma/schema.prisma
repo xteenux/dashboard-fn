@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  role         String        @default("user")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+}
+
+model Account {
+  id               String        @id @default(cuid())
+  name             String        @unique
+  type             String        @default("bank")
+  userType         String        @default("global")
+  userId           String?
+  createdAt        DateTime      @default(now())
+  user             User?         @relation(fields: [userId], references: [id])
+  destTransactions Transaction[] @relation("TransferDest")
+  transactions     Transaction[] @relation("AccountTransactions")
+}
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  emoji         String?
+  type          String
+  userType      String        @default("global")
+  userId        String?
+  createdAt     DateTime      @default(now())
+  user          User?         @relation(fields: [userId], references: [id])
+  subcategories Subcategory[]
+  transactions  Transaction[]
+}
+
+model Subcategory {
+  id           String        @id @default(cuid())
+  name         String
+  categoryId   String
+  createdAt    DateTime      @default(now())
+  category     Category      @relation(fields: [categoryId], references: [id])
+  transactions Transaction[]
+
+  @@unique([name, categoryId])
+}
+
+model Transaction {
+  id             String       @id @default(cuid())
+  date           DateTime
+  amount         Float
+  type           String
+  note           String?
+  description    String?
+  categoryName   String?
+  subcategory    String?
+  rawCategory    String?
+  categoryId     String?
+  accountId      String?
+  destAccountId  String?
+  subcategoryId  String?
+  userId         String
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id])
+  subcategoryRef Subcategory? @relation(fields: [subcategoryId], references: [id])
+  destAccount    Account?     @relation("TransferDest", fields: [destAccountId], references: [id])
+  account        Account?     @relation("AccountTransactions", fields: [accountId], references: [id])
+  category       Category?    @relation(fields: [categoryId], references: [id])
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryName])
+  @@index([userId])
+}

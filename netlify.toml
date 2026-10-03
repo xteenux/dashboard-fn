@@ -1,0 +1,9 @@
+[build]
+  command = "npx prisma generate && npx prisma db push --accept-generation-flag && npm run build"
+  publish = "out"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  node_version = "18"
