@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
       include: { category: true },
     });
     return NextResponse.json(sub, { status: 201 });
-  } catch (e: any) {
-    if (e?.code === "P2002") {
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") {
       return NextResponse.json({ error: "Subkategori ini sudah ada" }, { status: 409 });
     }
     return NextResponse.json({ error: "Category not found" }, { status: 400 });
@@ -29,6 +29,11 @@ export async function POST(req: NextRequest) {
 
 // PUT body: { id, name }
 export async function PUT(req: NextRequest) {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (role !== "owner" && role !== "manager") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { id, name } = await req.json();
   if (!id || !name) {
     return NextResponse.json({ error: "Missing id/name" }, { status: 400 });
@@ -43,6 +48,11 @@ export async function PUT(req: NextRequest) {
 
 // DELETE via query ?id=
 export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (role !== "owner" && role !== "manager") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   await prisma.subcategory.delete({ where: { id } }).catch(() => null);

@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true, email: true, role: true },
     });
     return NextResponse.json(user, { status: 201 });
-  } catch (e: any) {
-    if (e.code === "P2002") {
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") {
       return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
     throw e;

@@ -9,17 +9,16 @@ const ThemeContext = createContext<{
   toggle: () => void;
 }>({ theme: "dark", toggle: () => {} });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+// Lazy initializer: baca localStorage saat mount pertama (client-only),
+// hindari setState synchronously dalam effect.
+function readInitialTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("theme");
+  return saved === "light" ? "light" : "dark";
+}
 
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") as Theme | null;
-    if (saved) {
-      setTheme(saved);
-    } else {
-      setTheme("dark");
-    }
-  }, []);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(readInitialTheme);
 
   useEffect(() => {
     const root = document.documentElement;

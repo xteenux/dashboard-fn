@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       data: { name: name.trim(), type: type || "bank", userType: "global" },
     });
     return NextResponse.json(acc, { status: 201 });
-  } catch (e: any) {
-    if (e?.code === "P2002") {
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") {
       return NextResponse.json({ error: "Nama akun sudah ada" }, { status: 409 });
     }
     throw e;

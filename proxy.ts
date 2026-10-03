@@ -4,8 +4,8 @@ import { auth } from "./app/auth";
 
 export async function proxy(request: NextRequest) {
   const session = await auth();
-  const isAuth = !!session?.user;
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
+  const isAuth = !!session?.user;
 
   if (isAuthPage) {
     if (isAuth) return NextResponse.redirect(new URL("/dashboard", request.url));
@@ -22,5 +22,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/accounts/:path*", "/categories/:path*", "/users/:path*", "/login"],
 };

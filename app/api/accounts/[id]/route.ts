@@ -19,8 +19,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       data: { name: name.trim(), type: type || "bank" },
     });
     return NextResponse.json(updated);
-  } catch (e: any) {
-    if (e?.code === "P2002") {
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") {
       return NextResponse.json({ error: "Nama akun sudah ada" }, { status: 409 });
     }
     return NextResponse.json({ error: "Update failed" }, { status: 500 });

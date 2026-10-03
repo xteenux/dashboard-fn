@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -15,7 +15,7 @@ import {
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { format, formatDistanceToNow, isWithinInterval, parseISO } from "date-fns";
+import { format } from "date-fns";
 import type { DashboardData } from "@/app/lib/data";
 import { formatIDR, formatIDRShort, cn } from "@/app/lib/utils";
 import TransactionModal from "@/app/components/TransactionModal";
@@ -75,7 +75,32 @@ export function DashboardClient({ data, currentUser }: Props) {
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [editTx, setEditTx] = useState<DashboardData["transactions"][number] | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [toast, setToast] = useState<{ msg: string; kind: "success" | "error" } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const showToast = (msg: string, kind: "success" | "error" = "success") => {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Hapus transaksi ini? Tindakan ini tidak dapat dibatalkan.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Transaksi dihapus");
+        startTransition(() => router.refresh());
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.error || "Gagal menghapus transaksi", "error");
+      }
+    } catch {
+      showToast("Tidak dapat terhubung ke server", "error");
+    }
+    setDeletingId(null);
+  };
 
   const minDate = data.transactions.length
     ? data.transactions[data.transactions.length - 1].date.slice(0, 10)
@@ -226,22 +251,18 @@ export function DashboardClient({ data, currentUser }: Props) {
               Edit
             </button>
             <button
-              onClick={async () => {
-                if (!confirm("Hapus transaksi ini?")) return;
-                const res = await fetch(`/api/transactions/${info.row.original.id}`, { method: "DELETE" });
-                if (res.ok) {
-                  router.refresh();
-                }
-              }}
-              className="px-2 py-1 text-xs rounded-md border border-border text-red-500 hover:bg-red-500/10 transition-colors"
+              onClick={() => handleDelete(info.row.original.id)}
+              disabled={deletingId === info.row.original.id || isPending}
+              className="px-2 py-1 text-xs rounded-md border border-border text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-40"
             >
-              Hapus
+              {deletingId === info.row.original.id ? "…" : "Hapus"}
             </button>
           </div>
         ),
       },
     ],
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deletingId, isPending],
   );
 
   const table = useReactTable({
@@ -262,6 +283,12 @@ export function DashboardClient({ data, currentUser }: Props) {
     <div className="space-y-6 pb-10">
       {/* Filters */}
       <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center gap-3">
+        {data.transactions.length === 0 ? (
+          <div className="flex-1 text-sm text-muted-foreground">
+            Belum ada transaksi. Klik <span className="font-medium text-foreground">+ Transaksi</span> untuk memulai.
+          </div>
+        ) : (
+          <>
         <div className="flex gap-1 flex-wrap">
           {[{ label: "All", fn: () => presetRange(null) }, { label: "30d", fn: () => presetRange(30) },
             { label: "90d", fn: () => presetRange(90) }, { label: "180d", fn: () => presetRange(180) }]
@@ -276,35 +303,40 @@ export function DashboardClient({ data, currentUser }: Props) {
             ))}
         </div>
         <input
-          type="date" value={from} min={minDate} max={maxDate}
+          type="date" value={from} min={minDate} max={maxDate} aria-label="Tanggal mulai"
           onChange={(e) => setFrom(e.target.value)}
           className="px-2 py-1.5 text-sm rounded-lg border border-border bg-background"
         />
         <span className="text-muted-foreground text-sm">→</span>
         <input
-          type="date" value={to} min={minDate} max={maxDate}
+          type="date" value={to} min={minDate} max={maxDate} aria-label="Tanggal akhir"
           onChange={(e) => setTo(e.target.value)}
           className="px-2 py-1.5 text-sm rounded-lg border border-border bg-background"
         />
         <select
-          value={segment} onChange={(e) => setSegment(e.target.value)}
+          value={segment} onChange={(e) => setSegment(e.target.value)} aria-label="Tipe transaksi"
           className="px-2 py-1.5 text-sm rounded-lg border border-border bg-background"
         >
           {["All", "Income", "Expense", "Transfer-Out"].map((s) => <option key={s}>{s}</option>)}
         </select>
         <select
-          value={category} onChange={(e) => setCategory(e.target.value)}
+          value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Kategori"
           className="px-2 py-1.5 text-sm rounded-lg border border-border bg-background max-w-[200px] truncate"
         >
-          <option value="All">All categories</option>
+          <option value="All">Semua kategori</option>
           {data.categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
         </select>
         <button
           onClick={() => { setFrom(""); setTo(""); setSegment("All"); setCategory("All"); setQuery(""); }}
           className="px-3 py-1.5 text-sm rounded-lg bg-muted hover:bg-accent transition-colors"
         >Reset</button>
+          </>
+        )}
         <TransactionModal
-          onSaved={() => router.refresh()}
+          onSaved={() => {
+            showToast("Transaksi tersimpan");
+            startTransition(() => router.refresh());
+          }}
           categories={data.categories}
           accounts={data.accounts}
           canManageAccounts={currentUser?.role === "owner"}
@@ -431,8 +463,12 @@ export function DashboardClient({ data, currentUser }: Props) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="px-3 py-4 text-center text-muted-foreground">
-                    No matching transactions.
+                  <td colSpan={columns.length} className="px-3 py-12 text-center">
+                    <div className="text-4xl mb-2">🔍</div>
+                    <p className="text-muted-foreground font-medium">Tidak ada transaksi yang cocok</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Coba ubah filter tanggal, kategori, atau kata kunci pencarian.
+                    </p>
                   </td>
                 </tr>
               )}
@@ -461,9 +497,25 @@ export function DashboardClient({ data, currentUser }: Props) {
           onClose={() => setEditTx(null)}
           onSaved={() => {
             setEditTx(null);
-            router.refresh();
+            showToast("Perubahan tersimpan");
+            startTransition(() => router.refresh());
           }}
         />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          role="status"
+          className={cn(
+            "fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border",
+            toast.kind === "success"
+              ? "bg-green-500/15 border-green-500/30 text-green-500"
+              : "bg-red-500/15 border-red-500/30 text-red-500",
+          )}
+        >
+          {toast.msg}
+        </div>
       )}
     </div>
   );

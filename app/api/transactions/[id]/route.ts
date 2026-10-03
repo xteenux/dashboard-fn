@@ -88,7 +88,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const u = await sessionUser();
+  const u = await sessionUser(req);
   if (!u) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   const existing = await prisma.transaction.findUnique({ where: { id } });

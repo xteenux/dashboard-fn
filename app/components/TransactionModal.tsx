@@ -95,7 +95,7 @@ export default function TransactionModal({
         setOpen(false);
         resetForm();
       }
-    } catch (e) {
+    } catch {
       setErr("Tidak dapat terhubung ke server");
     }
     setLoading(false);

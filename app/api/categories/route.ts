@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       include: { subcategories: true },
     });
     return NextResponse.json(cat, { status: 201 });
-  } catch (e: any) {
-    if (e?.code === "P2002") {
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") {
       return NextResponse.json({ error: "Nama kategori sudah ada" }, { status: 409 });
     }
     throw e;

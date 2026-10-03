@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export function UserManagement({ users }: { users: Array<{ id: string; name: string; email: string; role: string }> }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
-    window.location.href = "/login";
+    router.push("/login");
   };
 
   return (
@@ -19,13 +21,13 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
           onClick={() => void handleLogout()}
           className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
         >
-          Logout
+          Keluar
         </button>
         <button
           onClick={() => setOpen(true)}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          + Add User
+          + Tambah User
         </button>
       </div>
 
@@ -34,30 +36,32 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
       )}
 
       {users.length === 0 ? (
-        <p className="text-muted-foreground">No users found</p>
+        <p className="text-muted-foreground">Belum ada user</p>
       ) : (
-        <table className="min-w-full border border-border bg-card">
-          <thead>
-            <tr className="text-left">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-t border-gray-200">
-                <td className="px-3 py-2">{user.name}</td>
-                <td className="px-3 py-2">{user.email}</td>
-                <td className="px-3 py-2 capitalize">{user.role}</td>
-                <td className="px-3 py-2">
-                  <DeleteUserButton userId={user.id} userName={user.name} />
-                </td>
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <table className="min-w-full">
+            <thead>
+              <tr className="text-left border-b border-border">
+                <th className="px-3 py-2 font-medium text-muted-foreground">Nama</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">Email</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">Role</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-accent/50">
+                  <td className="px-3 py-2">{user.name}</td>
+                  <td className="px-3 py-2">{user.email}</td>
+                  <td className="px-3 py-2 capitalize">{user.role}</td>
+                  <td className="px-3 py-2">
+                    <DeleteUserButton userId={user.id} userName={user.name} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -70,6 +74,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
   const [role, setRole] = useState("user");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const router = useRouter();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,12 +88,12 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
       });
       if (!res.ok) {
         const d = await res.json();
-        setErr(d.error || "Failed");
+        setErr(d.error || "Gagal");
       } else {
         onClose();
-        window.location.reload();
+        router.refresh();
       }
-    } catch (e) {
+    } catch {
       setErr("Network error");
     }
     setLoading(false);
@@ -146,10 +151,16 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 }
 
 function DeleteUserButton({ userId, userName }: { userId: string; userName: string }) {
+  const router = useRouter();
   const del = async () => {
-    if (!confirm(`Delete ${userName}?`)) return;
-    await fetch(`/api/users/${userId}`, { method: "DELETE" });
-    window.location.reload();
+    if (!confirm(`Hapus user ${userName}? Tindakan ini tidak dapat dibatalkan.`)) return;
+    const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || "Gagal menghapus user");
+      return;
+    }
+    router.refresh();
   };
   return (
     <button

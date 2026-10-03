@@ -27,6 +27,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (role !== "owner" && role !== "manager") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { id } = await params;
   try {
     await prisma.subcategory.deleteMany({ where: { categoryId: id } });

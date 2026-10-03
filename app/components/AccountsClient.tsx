@@ -21,8 +21,8 @@ export default function AccountsClient() {
     fetch("/api/accounts")
       .then((r) => r.json())
       .then((data) => {
-        const { accounts: accs, assets, liabilities, total } = data;
-        setAccounts(accs.map((a: any) => ({ ...a, balance: a.balance || 0 })));
+        const { accounts: accs } = data;
+        setAccounts((accs as Account[]).map((a) => ({ ...a, balance: a.balance || 0 })));
         setErr("");
       })
       .catch(() => setErr("Gagal muat akun"))
