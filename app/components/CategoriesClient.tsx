@@ -123,7 +123,11 @@ function CategoryCard({ cat, setErr, onChanged }: { cat: Category; setErr: (e: s
           </>
         ) : (
           <>
-            <span className="text-lg">{cat.emoji || "📁"}</span>
+            <span className="text-lg leading-none">
+              {cat.emoji || (
+                <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>
+              )}
+            </span>
             <strong className="flex-1">{cat.name}</strong>
             <span className="px-2 py-0.5 text-xs rounded bg-muted capitalize">{cat.type}</span>
             <button onClick={() => setEditing(true)} className="px-3 py-1 border border-border rounded text-xs">Edit</button>

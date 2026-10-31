@@ -14,6 +14,7 @@ import {
   getPaginationRowModel,
   flexRender,
   type ColumnDef,
+  type RowData,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import type { DashboardData } from "@/app/lib/data";
@@ -21,10 +22,18 @@ import { formatIDR, formatIDRShort, cn } from "@/app/lib/utils";
 import TransactionModal from "@/app/components/TransactionModal";
 import EditTransactionModal from "@/app/components/EditTransactionModal";
 
-const PALETTE = [
-  "#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#6366f1",
-];
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: "right";
+  }
+}
+
+// Single neutral ramp for categorical share charts (one hue, ink based).
+// Income and expense keep their semantic colour on the cash-flow line only.
+const RAMP = ["#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"];
+const INK = "#334155";
+const LINE_INCOME = "#16a34a";
+const LINE_EXPENSE = "#dc2626";
 
 interface Props {
   data: DashboardData;
@@ -57,7 +66,7 @@ function ChartTip({ active, payload, label }: TooltipProps) {
         <div key={i} className="flex items-center gap-2">
           <span
             className="w-2 h-2 rounded-full"
-            style={{ background: p.color || PALETTE[i % PALETTE.length] }}
+            style={{ background: p.color || RAMP[i % RAMP.length] }}
           />
           <span className="text-muted-foreground">{p.name}:</span>
           <span className="font-medium">{formatIDR(p.value)}</span>
@@ -171,9 +180,13 @@ export function DashboardClient({ data, currentUser }: Props) {
       const name = t.categoryName || "Other";
       map.set(name, (map.get(name) || 0) + t.amount);
     }
-    return [...map.entries()]
+    const sorted = [...map.entries()]
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
+    if (sorted.length <= 6) return sorted;
+    const top = sorted.slice(0, 5);
+    const rest = sorted.slice(5).reduce((sum, item) => sum + item.value, 0);
+    return [...top, { name: "Other", value: rest }];
   }, [filtered]);
 
   const subcategoryBar = useMemo(() => {
@@ -237,7 +250,8 @@ export function DashboardClient({ data, currentUser }: Props) {
       {
         accessorKey: "amount",
         header: "Amount",
-        cell: (info) => <span className="font-medium">{formatIDR(info.getValue() as number)}</span>,
+        meta: { align: "right" },
+        cell: (info) => <span className="font-medium tabular-nums">{formatIDR(info.getValue() as number)}</span>,
       },
       {
         id: "actions",
@@ -373,8 +387,8 @@ export function DashboardClient({ data, currentUser }: Props) {
                 <YAxis tickFormatter={formatIDRShort} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
                 <Tooltip content={<ChartTip />} />
                 <Legend />
-                <Line type="monotone" dataKey="income" name="Income" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="expense" name="Expense" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="income" name="Income" stroke={LINE_INCOME} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="expense" name="Expense" stroke={LINE_EXPENSE} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -386,7 +400,7 @@ export function DashboardClient({ data, currentUser }: Props) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={categoryDonut} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                  {categoryDonut.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+                  {categoryDonut.map((_, i) => <Cell key={i} fill={RAMP[i % RAMP.length]} />)}
                 </Pie>
                 <Tooltip content={<ChartTip />} />
                 <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: 11 }} />
@@ -407,9 +421,7 @@ export function DashboardClient({ data, currentUser }: Props) {
               <XAxis type="number" tickFormatter={formatIDRShort} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <Tooltip content={<ChartTip />} cursor={{ fill: "var(--muted)" }} />
-              <Bar dataKey="value" name="Amount" radius={[0, 4, 4, 0]}>
-                {subcategoryBar.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-              </Bar>
+              <Bar dataKey="value" name="Amount" fill={INK} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -441,7 +453,10 @@ export function DashboardClient({ data, currentUser }: Props) {
                     <th
                       key={h.id}
                       onClick={h.column.getToggleSortingHandler()}
-                      className="text-left px-3 py-2 font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap"
+                      className={cn(
+                        "px-3 py-2 font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap text-left",
+                        h.column.columnDef.meta?.align === "right" && "text-right",
+                      )}
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {h.column.getIsSorted() === "asc" ? " ▲" : h.column.getIsSorted() === "desc" ? " ▼" : ""}
@@ -455,7 +470,7 @@ export function DashboardClient({ data, currentUser }: Props) {
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="border-b border-border/50 hover:bg-accent/50">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3 py-2 whitespace-nowrap">
+                      <td key={cell.id} className={cn("px-3 py-2 whitespace-nowrap", cell.column.columnDef.meta?.align === "right" && "text-right")}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -464,7 +479,7 @@ export function DashboardClient({ data, currentUser }: Props) {
               ) : (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-12 text-center">
-                    <div className="text-4xl mb-2">🔍</div>
+                    <svg className="w-6 h-6 mx-auto mb-2 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
                     <p className="text-muted-foreground font-medium">Tidak ada transaksi yang cocok</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Coba ubah filter tanggal, kategori, atau kata kunci pencarian.

@@ -15,7 +15,7 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">User Management</h2>
+      <h2 className="text-2xl font-bold mb-4">Kelola User</h2>
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={() => void handleLogout()}
@@ -94,7 +94,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
         router.refresh();
       }
     } catch {
-      setErr("Network error");
+      setErr("Gagal terhubung ke server");
     }
     setLoading(false);
   };
@@ -102,11 +102,11 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div className="bg-card rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">Add User</h3>
+        <h3 className="text-lg font-semibold mb-4">Tambah User</h3>
         {err && <p className="text-red-500 mb-2">{err}</p>}
         <form onSubmit={submit} className="space-y-3">
           <input
-            type="text" placeholder="Name" required
+            type="text" placeholder="Nama" required
             className="w-full border border-border rounded px-3 py-2 bg-background"
             value={name} onChange={(e) => setName(e.target.value)}
           />
@@ -134,14 +134,14 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="px-3 py-1 border border-border rounded"
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>
@@ -167,7 +167,7 @@ function DeleteUserButton({ userId, userName }: { userId: string; userName: stri
       onClick={() => void del()}
       className="text-red-500 hover:underline text-sm"
     >
-      Delete
+      Hapus
     </button>
   );
 }

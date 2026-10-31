@@ -12,7 +12,7 @@ export default async function DashboardLayout({
   const role = (session?.user as { role?: string })?.role;
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border bg-card">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
