@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/lib/i18n";
 
 export function UserManagement({ users }: { users: Array<{ id: string; name: string; email: string; role: string }> }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -15,19 +17,19 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Kelola User</h2>
+      <h2 className="text-2xl font-bold mb-4">{t("user.title")}</h2>
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={() => void handleLogout()}
           className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
         >
-          Keluar
+          {t("logout")}
         </button>
         <button
           onClick={() => setOpen(true)}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          + Tambah User
+          {t("user.add")}
         </button>
       </div>
 
@@ -36,21 +38,21 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
       )}
 
       {users.length === 0 ? (
-        <p className="text-muted-foreground">Belum ada user</p>
+        <p className="text-muted-foreground">{t("user.empty")}</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="min-w-full">
             <thead>
               <tr className="text-left border-b border-border">
-                <th className="px-3 py-2 font-medium text-muted-foreground">Nama</th>
-                <th className="px-3 py-2 font-medium text-muted-foreground">Email</th>
-                <th className="px-3 py-2 font-medium text-muted-foreground">Role</th>
-                <th className="px-3 py-2 font-medium text-muted-foreground">Aksi</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">{t("user.col.name")}</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">{t("user.col.email")}</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">{t("user.col.role")}</th>
+                <th className="px-3 py-2 font-medium text-muted-foreground">{t("user.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-accent/50">
+                <tr key={user.id} className="border-b border-border last:border-0 hover:bg-accent/50">
                   <td className="px-3 py-2">{user.name}</td>
                   <td className="px-3 py-2">{user.email}</td>
                   <td className="px-3 py-2 capitalize">{user.role}</td>
@@ -68,6 +70,7 @@ export function UserManagement({ users }: { users: Array<{ id: string; name: str
 }
 
 function AddUserModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,13 +91,13 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
       });
       if (!res.ok) {
         const d = await res.json();
-        setErr(d.error || "Gagal");
+        setErr(d.error || t("user.fail"));
       } else {
         onClose();
         router.refresh();
       }
     } catch {
-      setErr("Gagal terhubung ke server");
+      setErr(t("user.connError"));
     }
     setLoading(false);
   };
@@ -102,21 +105,21 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div className="bg-card rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">Tambah User</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("user.modalTitle")}</h3>
         {err && <p className="text-red-500 mb-2">{err}</p>}
         <form onSubmit={submit} className="space-y-3">
           <input
-            type="text" placeholder="Nama" required
+            type="text" placeholder={t("user.name")} required
             className="w-full border border-border rounded px-3 py-2 bg-background"
             value={name} onChange={(e) => setName(e.target.value)}
           />
           <input
-            type="email" placeholder="Email" required
+            type="email" placeholder={t("user.email")} required
             className="w-full border border-border rounded px-3 py-2 bg-background"
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
           <input
-            type="password" placeholder="Password" required
+            type="password" placeholder={t("user.password")} required
             className="w-full border border-border rounded px-3 py-2 bg-background"
             value={password} onChange={(e) => setPassword(e.target.value)}
           />
@@ -134,14 +137,14 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="px-3 py-1 border border-border rounded"
             >
-              Batal
+              {t("user.cancel")}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Menyimpan..." : "Simpan"}
+              {loading ? t("user.saving") : t("user.save")}
             </button>
           </div>
         </form>
@@ -151,13 +154,14 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 }
 
 function DeleteUserButton({ userId, userName }: { userId: string; userName: string }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const del = async () => {
-    if (!confirm(`Hapus user ${userName}? Tindakan ini tidak dapat dibatalkan.`)) return;
+    if (!confirm(t("user.confirmDelete", { name: userName }))) return;
     const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      alert(d.error || "Gagal menghapus user");
+      alert(d.error || t("user.failDelete"));
       return;
     }
     router.refresh();
@@ -167,7 +171,7 @@ function DeleteUserButton({ userId, userName }: { userId: string; userName: stri
       onClick={() => void del()}
       className="text-red-500 hover:underline text-sm"
     >
-      Hapus
+      {t("table.delete")}
     </button>
   );
 }

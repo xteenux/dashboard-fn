@@ -33,6 +33,7 @@ export async function getDashboardData(filters: FilterParams = {}, currentUser?:
       select: {
         id: true, date: true, amount: true, type: true,
         categoryName: true, subcategory: true, note: true,
+        rawCategory: true,
         account: { select: { id: true, name: true, type: true } },
         destAccount: { select: { id: true, name: true } },
         category: { select: { id: true, name: true, emoji: true, type: true } },
@@ -112,21 +113,35 @@ export async function getDashboardData(filters: FilterParams = {}, currentUser?:
     incomeBreakdown,
     categories,
     accounts,
-    transactions: transactions.map((t) => ({
-      id: t.id,
-      date: t.date.toISOString(),
-      amount: t.amount,
-      type: t.type,
-      categoryName: t.categoryName,
-      subcategory: t.subcategory,
-      note: t.note,
-      accountName: t.account?.name || "Unknown",
-      accountId: t.account?.id ?? null,
-      destAccountName: t.destAccount?.name ?? null,
-      destAccountId: t.destAccount?.id ?? null,
-      subcategoryId: t.subcategoryId,
-      categoryId: t.category?.id ?? null,
-    })),
+    transactions: transactions.map((t) => {
+      // Fallback tujuan legacy: transfer lama simpan akun tujuan di rawCategory
+      // (destAccountId masih null), jadi isi destAccountName dari rawCategory
+      // bila cocok nama akun — biar list & filter akun melihat sisi tujuan.
+      const acctNames = new Set(accounts.map((a) => a.name));
+      const destName =
+        t.destAccount?.name ??
+        (t.type === "Transfer-Out" && t.rawCategory && acctNames.has(t.rawCategory) ? t.rawCategory : null);
+      const destId =
+        t.destAccount?.id ??
+        (t.type === "Transfer-Out" && t.rawCategory && acctNames.has(t.rawCategory)
+          ? accounts.find((a) => a.name === t.rawCategory)?.id ?? null
+          : null);
+      return {
+        id: t.id,
+        date: t.date.toISOString(),
+        amount: t.amount,
+        type: t.type,
+        categoryName: t.categoryName,
+        subcategory: t.subcategory,
+        note: t.note,
+        accountName: t.account?.name || "Unknown",
+        accountId: t.account?.id ?? null,
+        destAccountName: destName,
+        destAccountId: destId,
+        subcategoryId: t.subcategoryId,
+        categoryId: t.category?.id ?? null,
+      };
+    }),
   };
 }
 

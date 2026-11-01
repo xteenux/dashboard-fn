@@ -20,11 +20,13 @@
     "jose": "^6.2.12",
     "next": "16.3.5",
     "next-auth": "^5.0.0-beta.32",
+    "pdf-parse": "^1.1.1",
     "prisma": "^6.19.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
     "tailwind-merge": "^2.6.1",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

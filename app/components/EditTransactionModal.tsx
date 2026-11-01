@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/app/lib/i18n";
 
 export interface EditTx {
   id: string;
@@ -34,6 +35,7 @@ export default function EditTransactionModal({
   accounts?: AccountOpt[];
   categories?: CatOpt[];
 }) {
+  const { t } = useLanguage();
   const [date, setDate] = useState(tx.date.slice(0, 10));
   const [amount, setAmount] = useState(String(tx.amount));
   const [type, setType] = useState(tx.type);
@@ -51,6 +53,11 @@ export default function EditTransactionModal({
 
   const typeKey = isTransfer ? "transfer" : type === "Income" ? "income" : "expense";
   const filteredCategories = categories.filter((c) => c.type === typeKey);
+
+  const typeLabel = (v: string) =>
+    v === "Income" ? t("type.income") : v === "Expense" ? t("type.expense") : v === "Transfer-Out" ? t("type.transfer") : v;
+
+  const accountTypeLabel = (v: string) => t(`account.${v}`);
 
   const onTypeChange = (next: string) => {
     setType(next);
@@ -77,11 +84,11 @@ export default function EditTransactionModal({
     e.preventDefault();
     if (!amount || !date) return;
     if (isTransfer && (!accountId || !destAccountId)) {
-      setErr("Transfer wajib memilih akun sumber dan akun tujuan");
+      setErr(t("tx.transferRequiresBoth"));
       return;
     }
     if (isTransfer && accountId === destAccountId) {
-      setErr("Akun sumber dan tujuan tidak boleh sama");
+      setErr(t("tx.sameAccount"));
       return;
     }
     setLoading(true);
@@ -103,13 +110,13 @@ export default function EditTransactionModal({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setErr(d.error || `Gagal (${res.status})`);
+        setErr(d.error || t("tx.failed", { status: res.status }));
       } else {
         onSaved();
         onClose();
       }
     } catch {
-      setErr("Tidak dapat terhubung ke server");
+      setErr(t("tx.connError"));
     }
     setLoading(false);
   };
@@ -119,7 +126,7 @@ export default function EditTransactionModal({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-card rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Edit Transaksi</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("tx.editTitle")}</h3>
         {err && <p className="text-red-500 mb-2 text-sm">{err}</p>}
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -137,23 +144,23 @@ export default function EditTransactionModal({
               className={fieldCls}
               value={type} onChange={(e) => onTypeChange(e.target.value)}
             >
-              <option value="Income">Income</option>
-              <option value="Expense">Expense</option>
-              <option value="Transfer-Out">Transfer-Out</option>
+              <option value="Income">{typeLabel("Income")}</option>
+              <option value="Expense">{typeLabel("Expense")}</option>
+              <option value="Transfer-Out">{typeLabel("Transfer-Out")}</option>
             </select>
 
             {isTransfer ? (
               <>
                 <select className={fieldCls} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                  <option value="">-- Akun Sumber --</option>
+                  <option value="">{t("tx.sourceAccount")}</option>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
+                    <option key={a.id} value={a.id}>{a.name} ({accountTypeLabel(a.type)})</option>
                   ))}
                 </select>
                 <select className={fieldCls} value={destAccountId} onChange={(e) => setDestAccountId(e.target.value)}>
-                  <option value="">-- Akun Tujuan --</option>
+                  <option value="">{t("tx.destAccount")}</option>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id} disabled={a.id === accountId}>{a.name} ({a.type})</option>
+                    <option key={a.id} value={a.id} disabled={a.id === accountId}>{a.name} ({accountTypeLabel(a.type)})</option>
                   ))}
                 </select>
               </>
@@ -164,7 +171,7 @@ export default function EditTransactionModal({
                   value={categoryId}
                   onChange={(e) => { setCategoryId(e.target.value); setSubcategoryId(""); }}
                 >
-                  <option value="">-- Pilih Kategori --</option>
+                  <option value="">{t("tx.selectCategory")}</option>
                   {filteredCategories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                   ))}
@@ -175,31 +182,31 @@ export default function EditTransactionModal({
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   disabled={!categoryId}
                 >
-                  <option value="">-- Subkategori --</option>
+                  <option value="">{t("tx.subcategory")}</option>
                   {subOptions.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
                 <select className={fieldCls} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                  <option value="">-- Pilih Akun --</option>
+                  <option value="">{t("tx.selectAccount")}</option>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
+                    <option key={a.id} value={a.id}>{a.name} ({accountTypeLabel(a.type)})</option>
                   ))}
                 </select>
               </>
             )}
           </div>
           <textarea
-            placeholder="Catatan (opsional)" rows={2}
+            placeholder={t("tx.note")} rows={2}
             className="w-full border border-border rounded px-3 py-2 bg-background resize-none"
             value={note} onChange={(e) => setNote(e.target.value)}
           />
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-3 py-1 border border-border rounded">
-              Batal
+              {t("tx.cancel")}
             </button>
             <button type="submit" disabled={loading} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-              {loading ? "Simpan..." : "Simpan"}
+              {loading ? t("tx.saving") : t("tx.save")}
             </button>
           </div>
         </form>

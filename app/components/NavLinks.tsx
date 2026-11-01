@@ -2,20 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/app/lib/i18n";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/categories", label: "Kategori" },
-  { href: "/accounts", label: "Akun" },
+  { href: "/dashboard", key: "nav.dashboard" },
+  { href: "/categories", key: "nav.categories" },
+  { href: "/accounts", key: "nav.accounts" },
 ];
 
 export function NavLinks({ role }: { role?: string }) {
   const pathname = usePathname();
-  const links = role === "owner" ? [...LINKS, { href: "/users", label: "User" }] : LINKS;
+  const { t } = useLanguage();
+  const links = role === "owner" ? [...LINKS, { href: "/users", key: "nav.users" }] : LINKS;
 
   return (
-    <nav className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm overflow-x-auto" aria-label="Navigasi utama">
-      {links.map(({ href, label }) => {
+    <nav
+      className="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-muted/40 px-1.5 py-1 text-xs sm:text-sm"
+      aria-label={t("nav.aria")}
+    >
+      {links.map(({ href, key }) => {
         const active = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
@@ -23,13 +28,13 @@ export function NavLinks({ role }: { role?: string }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={
-              "px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap " +
+              "rounded-full px-3 py-1.5 whitespace-nowrap transition-colors " +
               (active
-                ? "bg-accent font-medium text-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground")
+                ? "bg-foreground text-background font-medium"
+                : "text-muted-foreground hover:text-foreground")
             }
           >
-            {label}
+            {t(key)}
           </Link>
         );
       })}

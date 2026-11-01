@@ -19,24 +19,24 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: #f9fafb;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #111827;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
   --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --primary: #2563eb;
+  --accent-foreground: #111827;
+  --primary: #1d4ed8;
   --primary-foreground: #ffffff;
-  --destructive: #ef4444;
-  --ring: #2563eb;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --chart-income: #22c55e;
-  --chart-expense: #ef4444;
-  --chart-transfer: #3b82f6;
+  --destructive: #dc2626;
+  --ring: #1d4ed8;
+  --success: #16a34a;
+  --warning: #d97706;
+  --chart-income: #16a34a;
+  --chart-expense: #dc2626;
+  --chart-transfer: #2563eb;
 }
 
 .dark {
@@ -87,3 +87,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* Theme icon: show moon on light, sun on dark; no JS branch, no hydration mismatch */
+html.light [data-theme-icon="sun"] { display: none; }
+html.dark [data-theme-icon="moon"] { display: none; }

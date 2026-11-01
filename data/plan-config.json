@@ -1,0 +1,17 @@
+{
+  "foodCutPct": 0.25,
+  "shopCutPct": 0.2,
+  "transportCutPct": 0.18,
+  "subscriptionCutPct": 0.3,
+  "autoDebitPct": 0.1,
+  "incomeStreamThreshold": 0.2,
+  "incomeStreamFloor": 50000,
+  "minFoodSpend": 0,
+  "minShopSpend": 0,
+  "minTransportTrips": 6,
+  "minSubscriptionCount": 2,
+  "healthySavingsRate": 0.2,
+  "dominantCategoryShare": 0.35,
+  "moverMinAbs": 25000,
+  "moverMinPctOfExpense": 0.04
+}
